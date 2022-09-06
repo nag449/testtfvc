@@ -1,0 +1,91 @@
+# In this YAML we are doing the following process on application solution
+#Task 1: Restoring the nuget packages using nuget.config file.
+#Task 2: Building the application solution.
+#Task 3: Archive the bin folder of the application solution with versioning.
+#Task 4 and 5: Copy the Archived bin folder to the NTFS.
+
+parameters:
+ buildConfiguration: ''
+ buildPlatform: '' 
+ solutionPath: ''
+ ArchiveFolderPath: ''
+ BinFolderPath: ''
+ UserAdded_TargetFolder: ''
+ CI_TargetFolder: ''
+ VersionNumber: ''
+ commonPath: ''
+ 
+ 
+
+steps:
+
+- task: NuGetToolInstaller@1
+
+- task: NuGetCommand@2
+  displayName: 'NuGet custom'
+  inputs:
+    command: custom
+    feedsToUse: config    
+    arguments: 'restore $(solutionPath) -Verbosity Detailed -NonInteractive -SolutionDirectory $(commonPath)'
+
+
+- task: VSBuild@1
+  displayName: 'Build classlib1'
+  inputs:
+    solution: '$(commonPath)\lakeside.classlib1\lakeside.classlib1.csproj'
+    vsVersion: '17.0'       
+    configuration: '$(buildConfiguration)'
+
+- task: CopyFiles@2
+  displayName: 'Copy Files to CommonLibraries directory'
+  inputs:
+    SourceFolder: '$(commonPath)\lakeside.classlib1\bin\release'
+    Contents: '*.dll'
+    TargetFolder: '$(commonPath)\CommonLibraries\DLLs'
+    CleanTargetFolder: false
+
+- task: VSBuild@1
+  displayName: 'Build classlib2'
+  inputs:
+    solution: '$(commonPath)\lakeside.classlib2\lakeside.classlib2.csproj'
+    vsVersion: '17.0'       
+    configuration: '$(buildConfiguration)'
+
+- task: CopyFiles@2
+  displayName: 'Copy Files to CommonLibraries directory'
+  inputs:
+    SourceFolder: '$(commonPath)\lakeside.classlib2\bin\release'
+    Contents: '*.dll'
+    TargetFolder: '$(commonPath)\CommonLibraries\DLLs'
+    CleanTargetFolder: false
+
+- task: VSBuild@1
+  displayName: 'Build webapplication'
+  inputs:
+    solution: '$(solutionPath)'
+    vsVersion: '17.0'       
+    configuration: '$(buildConfiguration)'
+
+- task: ArchiveFiles@2
+  displayName: 'Archive bin folder'
+  inputs:
+    rootFolderOrFile: '${{parameters.BinFolderPath}}'
+    archiveFile: '${{parameters.ArchiveFolderPath}}\${{parameters.VersionNumber}}.zip'
+
+- task: CopyFiles@2
+  displayName: 'Copy Files of auto-versioned artifacts to Network File Share'
+  inputs:
+    SourceFolder: '${{parameters.ArchiveFolderPath}}' 
+    Contents: '**\${{parameters.VersionNumber}}.zip'
+    TargetFolder: '${{parameters.CI_TargetFolder}}'
+    CleanTargetFolder: false
+  condition:  eq(variables['CI_VersionNumber'], 'True')
+
+- task: CopyFiles@2
+  displayName: 'Copy Files of manual versioned artifacts to Network File Share '
+  inputs:
+    SourceFolder: '${{parameters.ArchiveFolderPath}}' 
+    Contents: '**\${{parameters.VersionNumber}}.zip'
+    TargetFolder: '${{parameters.UserAdded_TargetFolder}}'
+    CleanTargetFolder: false
+  condition:  eq(variables['UserAdded_VersionNumber'], 'True')
