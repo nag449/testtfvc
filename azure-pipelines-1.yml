@@ -30,7 +30,7 @@ jobs:
       REM ### you can add multiple directories with multiple lines
       echo research/lakeside.classlib1/ >> .git/info/sparse-checkout
       echo research/lakeside.classlib2/ >> .git/info/sparse-checkout
-      echo research/Web-Application-1/ >> .git/info/sparse-checkout      
+      echo research/Web-Application-2/ >> .git/info/sparse-checkout      
       REM ### fetch the remote repo using your access token
       git remote add -f origin https://github.com/nag449/testtfvc
       REM ### pull the files from the source branch of this build, using the build-in Azure DevOps variable for the branch name
