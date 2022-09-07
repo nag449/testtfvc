@@ -1,0 +1,72 @@
+
+
+steps:
+
+- powershell: |
+    $VersionNumber = "$(VersionNumber)"
+    $VersionRegEx = "$(VersionRegEx)"
+    
+    $UserAdded_TargetFolder = "$(UserAdded_TargetFolder)"
+    $artifact = $UserAdded_TargetFolder +'\'+''  +$VersionNumber+ '.zip'
+    
+    #Validating Version number
+    try
+    {
+        if(![string]::IsNullOrWhitespace($VersionNumber))
+        {
+    
+            $ValidVersion = $VersionNumber -match $VersionRegEx
+        
+            if($ValidVersion)
+            {
+    
+                write-host "Version number is valid"
+    
+                    if (Test-Path -Path $artifact -PathType Leaf)
+                    {
+                        Write-Host "Cannot create the artifact because a artifact with the version '$VersionNumber' already exists."
+                        exit 1
+                    }
+                    else 
+                    {
+                        Write-Host "Creating the artifact with version '$VersionNumber' " 
+                    }
+            }
+    
+            else{
+    
+                write-host "Version number '$VersionNumber' is Invalid. Version number MUST take the form X.Y.Z where X, Y, and Z are non-negative integers"
+                exit 1
+    
+                }
+        }
+    
+        else
+        {
+        
+        Write-Host "CI enable"
+    
+        }
+    
+    }
+    catch 
+    {
+    throw $_.Exception.Message
+    }
+  displayName: 'PS: Version number validation'
+
+- powershell: |
+    # Write your PowerShell commands here.
+    $VersionNumber = '$(VersionNumber)'
+
+    if([string]::IsNullOrWhitespace($VersionNumber)){
+    $P_VersionNumber  = '$(Environment)-$(dateTime)-$(major-minor).$(version)'
+    Write-Host "##vso[task.setvariable variable=VersionNumber;]$P_VersionNumber"
+    
+    Write-Host "##vso[task.setvariable variable=CI_VersionNumber;]True"              
+    }
+    else{
+    Write-Host "##vso[task.setvariable variable=UserAdded_VersionNumber;]True"
+    Write-Host '$(VersionNumber)'
+    } 
+  displayName: 'PS: Version Number Format'
