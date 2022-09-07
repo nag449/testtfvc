@@ -1,0 +1,74 @@
+#This YAML trigger the application.yaml template.
+#Pointed to master branch
+#Versioning of the Archived bin folder
+
+trigger:
+ - main
+
+
+variables:
+  major-minor: '99.99'
+  version:  $[counter(variables['major-minor'], 0)]
+  dateTime: $[format('{0:yyyyMMddHHmmss}', pipeline.startTime)]
+  
+pool: 
+    name: 'default'
+
+jobs:
+- job: Application1
+  displayName: Building  Application1
+  workspace: 
+    clean: 'all'     
+  steps:
+  - checkout: none
+  - script: |
+      REM ### initialize Git in the current directory
+      git init
+      REM ### set Git sparsecheckout to TRUE
+      git config core.sparsecheckout true
+      REM ### write the directories that you want to pull to the .git/info/sparse-checkout file (without the root directory)
+      REM ### you can add multiple directories with multiple lines
+      echo research/lakeside.classlib1/ >> .git/info/sparse-checkout
+      echo research/lakeside.classlib2/ >> .git/info/sparse-checkout
+      echo research/Web-Application-1/ >> .git/info/sparse-checkout      
+      REM ### fetch the remote repo using your access token
+      git remote add -f origin https://github.com/nag449/testtfvc
+      REM ### pull the files from the source branch of this build, using the build-in Azure DevOps variable for the branch name
+      git pull origin $(Build.SourceBranch)
+    displayName: 'Get only required files and folders instead of entire repository'
+
+  - template: versionformat.yaml
+    
+
+  - powershell: |
+      # Download Source Directory.           
+      Write-Host $(build.sourcesDirectory)
+      write-host $(Build.SourceBranch)      
+    displayName: 'PS :  Download Source Directory'
+
+  - powershell: |
+      # List all directories of the source folder.      
+      Get-ChildItem -Path $(build.sourcesDirectory)
+    displayName: 'PS : List all directories of the source folder'
+
+  - template: commonbuild.yaml
+    parameters:
+      solutionPath: '$(solutionPath)'
+      buildPlatform: '$(buildPlatform)'
+      buildConfiguration: '$(buildConfiguration)'
+      ArchiveFolderPath: '$(ArchiveFolderPath)'
+      BinFolderPath: '$(BinFolderPath)'
+      UserAdded_TargetFolder: '$(UserAdded_TargetFolder)'
+      CI_TargetFolder: '$(CI_TargetFolder)'
+      VersionNumber: '$(VersionNumber)'
+      commonPath: '$(commonPath)'
+    
+
+      
+      
+      
+      
+
+  
+        
+        
